@@ -2,7 +2,7 @@
 #include <iostream>
 #include "iterator.hpp"
 #include "reverse_iterator.hpp"
-//#include "../iterator_traits.hpp"
+#include "../iterator_traits.hpp"
 namespace ft
 {
     template < class T, class Alloc = std::allocator<T> > 
@@ -58,7 +58,6 @@ namespace ft
 
         Vector& operator=(const Vector& x)
         {
-            size_t i;
             if(_size != 0)
                 alloc.deallocate(ptr,_size);
             _size = x._size;
@@ -110,7 +109,7 @@ namespace ft
                 throw std::out_of_range("Vector");
             return(ptr[i]);
         }
-        const reference at(size_type i) const
+        const_reference at(size_type i) const
         {
             if ( i >= _size)
                 throw std::out_of_range("Vector");
@@ -207,7 +206,7 @@ namespace ft
 
             x.ptr = tmp;
             x._size = tsize;
-            tcap = tcap; 
+            x._cap = tcap; 
         }
 
         void push_back(const value_type &val)
@@ -226,7 +225,32 @@ namespace ft
             _size--;
         }
 
-
+        iterator insert( iterator pos, const T& value )
+        {
+            difference_type posx = distance(this->begin(),pos);
+            difference_type l = 0;
+            pointer tmp = ptr;
+            if(_size + 1 > _cap)
+            {
+                _cap *= 2;
+            }
+            ptr = alloc.allocate(_cap);
+            for(difference_type i = 0; i < _size + 1 ; i++)
+            {
+                if(i != posx)
+                {
+                    alloc.construct(ptr + i,tmp[l]);
+                    l++;
+                }
+                else
+                {
+                    alloc.construct(ptr + i,value);
+                }
+            }
+            alloc.deallocate(tmp, _cap);
+            _size++;
+            return iterator(ptr);
+        }
     };
     template <typename T>
     std::ostream &operator<<(std::ostream &o,const Vector<T> &p)

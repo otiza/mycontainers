@@ -13,20 +13,20 @@ int main()
     B.push_back(4);
     B.push_back(5);
     B.push_back(6);
-    ft::Vector<int> C(B);
+    ft::Vector<int>::iterator l = B.end();
     
-    ft::Vector<int>::reverse_iterator it = B.rend();
-    it--;
+    //ft::Vector<int>::reverse_iterator it = B.rend();
+    //it--;
     std::cout << "kolijsdjkk"<< std::endl;
-    int l = 0;
-    std::cout << *it << "  kk"<< std::endl;
-    while(it != B.rbegin())
-    {
-//
-    std::cout << *it <<"dd"<< std::endl;
-    it--;
+ 
+    //std::cout << *it << "  kk"<< std::endl;
+    //while(it != B.rbegin())
+    //{
+    B.insert(l, 15);
+    //std::cout << *it <<"dd"<< std::endl;
+    //it--;
     
-    }
+    //}
     ////std::cout << B.capacity()<< std::endl;
     //B.returnvect();
 

@@ -125,6 +125,17 @@ class reverse_iterator{
     reverse_iterator<Iter> operator+( typename reverse_iterator<Iter>::difference_type n,const reverse_iterator<Iter>& it ) {return(it + n);}
     template< class Iterator >
     typename reverse_iterator<Iterator>::difference_type operator-( const reverse_iterator<Iterator>& lhs,const reverse_iterator<Iterator>& rhs ){return (rhs.base() - lhs.base());}
+    template< class Iter >
+    typename iterator_traits<Iter>::difference_type distance( Iter fst, Iter lst )
+    {
+        typename iterator_traits<Iter>::difference_type ret = 0;
+        while(fst != lst)
+        {
+            fst++;
+            ret++;
+        }
+        return ret;
+    }
 }
 
 
