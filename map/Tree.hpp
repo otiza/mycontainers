@@ -6,11 +6,13 @@ namespace ft
     template <typename pair>
     class node
     {
-        publix:
+        public:
         node<pair> *left;
         node<pair> *right;
-        pair *data
-    };
+        node<pair> *right;
+        pair *data;
+        int height; int threshold;
+    } ;
     template<
     class Key,
     class T,
@@ -32,6 +34,11 @@ namespace ft
         typedef node<value_type> *root;    
         typedef std::ptrdiff_t difference_type;
         typedef std::size_t size_type;
+        private:
+            key_compare comp;
+            size_type _size;
+            allocator_type alloc;
+            node_alloc  
 
         
     }

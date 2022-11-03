@@ -1,5 +1,7 @@
 #pragma once
 #include <iostream>
+#include "../tools/enable_if.hpp"
+#include "../tools/is_integral.hpp"
 #include "iterator.hpp"
 #include "reverse_iterator.hpp"
 #include "../iterator_traits.hpp"
@@ -29,8 +31,10 @@ namespace ft
         //MEMBER functions
         ~Vector()
         {
-            if(_size > 0)
-                alloc.deallocate(ptr, _size);
+            for (size_type i = 0; i < _size; i++)
+                alloc.destroy(&ptr[i]);
+   
+         alloc.deallocate(ptr, _cap);
         }
 
         explicit Vector(const allocator_type &allocc = Alloc()) : _size(0), _cap(0), ptr(NULL), alloc(allocc){};
@@ -44,8 +48,8 @@ namespace ft
             _cap = n;
         }
 
-        template <class InputIterator>
-        Vector(InputIterator fst, InputIterator lst, const allocator_type &allocc = Alloc()): _cap(0), _size(0), ptr(NULL), alloc(allocc)
+        template <class Iter>
+        Vector(Iter fst, Iter lst, const allocator_type &allocc = Alloc(),typename ft::enable_if<!ft::is_integral<Iter>::value>::type *f = NULL): _cap(0), _size(0), ptr(NULL), alloc(allocc)
         {
             reserve(lst - fst);
             for(;fst != lst; fst++)
@@ -153,6 +157,7 @@ namespace ft
                     }
                     alloc.deallocate(tmp, _cap);
                 }
+                
                 _cap = n;
             }
         }
@@ -163,10 +168,11 @@ namespace ft
         //modifiers
         void clear()
         {
-            for(size_type i= 0; i < _size; i++)
+            for(size_type i= 0; i < _cap; i++)
             {
-                alloc.destroy(&ptr[i]);
+                alloc.destroy(ptr + i);
             }
+            //alloc.destroy(&ptr[i]);
             _size = 0;
         }
 
@@ -224,34 +230,257 @@ namespace ft
             alloc.destroy(&ptr[_size - 1]);
             _size--;
         }
+        iterator erase(iterator pos)
+        {
+            for (size_type i = pos - ptr; i < _size - 1; ++i)
+                ptr[i] = ptr[i + 1];
+            _size--;
+            return pos;
+        }
 
+        iterator erase(iterator first, iterator last)
+        {
+            size_type n = last - first;
+            for (size_type i = first - ptr; i < _size - n; ++i)
+                alloc.construct(&ptr[i] , ptr[i + n]);
+            _size -= n;
+            return first;
+        }
+
+        void insert (iterator pos, size_type n, const value_type& value)
+        {
+            
+            difference_type posx = ft::distance(this->begin(),pos);
+            difference_type l = 0;
+            pointer tmp;
+            size_type old_cap = _cap;
+          
+            bool inserted = false;
+            if (_cap ==  0)
+            {
+                while(n-- > 0)
+                    this->push_back(value);
+            }
+            else if(_size + n > _cap)
+            {
+                //allocating until the size is enough for the insertion
+                while(_size+n > _cap)
+                {
+                    _cap *=2;
+                    
+                }
+                
+                tmp = ptr;
+                ptr = alloc.allocate(_cap);
+                //iterating and importing elemanets from the old array until we found the insertion offset
+                for(difference_type i = 0; i < _size + 1 ; i++)
+                {
+                    if(i != posx)
+                    {
+                        //inserting old elements before the insertion point in their old location
+                        if (!inserted)
+                            alloc.construct(ptr + i ,tmp[l]);
+                        //if the n elements are inserted we insert the old elements that are after the insertion point in their new position
+                        // new position =  (old position + number of elements inserted);
+                        else
+                            alloc.construct(ptr + i +  n - 1,tmp[l]);  
+                        l++;
+                        
+                    }
+                    //inserting n values in the new array
+                    else
+                    {
+                        inserted = true;   
+                        difference_type c = i, b = n;
+                        while(b > 0)
+                        {
+                            
+                            alloc.construct(ptr + c,value);
+                            
+                            c++;b--;
+                        }                    
+                    }
+                }
+                
+                alloc.deallocate(tmp, old_cap);
+                _size += n;
+            
+            }
+            else
+            { 
+  
+                difference_type i = _size;
+                std::cout << "zaba:" << _size<< std::endl;
+                //inserting elements that are after the insertion point in their new location
+                for(; i > posx; i--)
+                    alloc.construct(ptr + i + n - 1, *(ptr + i - 1));
+                
+                _size += n; 
+                
+                while(n > 0)
+                {
+                    
+                    alloc.construct(ptr+ posx + n, value);
+                    
+                    n--;
+                }
+            }
+        }
         iterator insert( iterator pos, const T& value )
         {
-            difference_type posx = distance(this->begin(),pos);
+            difference_type posx = ft::distance(this->begin(),pos);
             difference_type l = 0;
-            pointer tmp = ptr;
-            if(_size + 1 > _cap)
+            pointer tmp;
+            size_type old_cap = _cap;
+            if (_cap ==  0)
+                this->push_back(value);
+            else if(_size + 1 > _cap)
             {
                 _cap *= 2;
-            }
-            ptr = alloc.allocate(_cap);
-            for(difference_type i = 0; i < _size + 1 ; i++)
-            {
-                if(i != posx)
+                tmp = ptr;
+                ptr = alloc.allocate(_cap);
+                for(difference_type i = 0; i < _size + 1 ; i++)
                 {
-                    alloc.construct(ptr + i,tmp[l]);
-                    l++;
+                    if(i != posx)
+                    {
+                        alloc.construct(ptr + i,tmp[l]);
+                        l++;
+                        
+                    }
+                    
+                    else
+                    {
+                        alloc.construct(ptr + i,value);
+                    }
+                }
+                alloc.deallocate(tmp, old_cap);
+                _size++;
+                return iterator(ptr + posx);
+            }
+            else
+            {
+            
+               for(difference_type i = _size; i > posx; i--)
+                    alloc.construct(ptr + i, *(ptr + i - 1));
+                alloc.construct(ptr + posx, value);
+                _size++;
+            }
+            return iterator(ptr+ posx);
+        }
+        template <class Iter>    
+        void insert (iterator pos, Iter first, Iter last,typename ft::enable_if<!ft::is_integral<Iter>::value>::type *f = NULL)
+        {
+           /*size_type n = std::distance(first, last);
+            size_type i = 0;
+            size_type pos = position - begin();
+            if (_cap < _size + n && n <= _size)
+                reserve(_cap * 2);
+            else if (_size + n > _cap)
+                reserve(_cap + n);
+            while (_size + n - i > 0)
+            {
+                if (_size - i == pos)
+                {
+                    pos = n;
+                    try
+                    {
+                        while (pos--)
+                           alloc.construct(&ptr[_size - i + pos], *(--last));
+                    }
+                    catch (...)
+                    {
+                        for (size_type i = size(); i != 0; i--)
+                        {
+
+                            std::cout << "i =  " << i << std::endl;
+                            alloc.destroy(&ptr[i - 1]);
+                        }
+                        _cap = 0;
+                        throw 3;
+                    }
+                    break;
                 }
                 else
-                {
-                    alloc.construct(ptr + i,value);
-                }
+                    alloc.construct(&ptr[_size - i + n - 1] ,  ptr[_size - i - 1]);
+                i++;
             }
-            alloc.deallocate(tmp, _cap);
-            _size++;
-            return iterator(ptr);
+            _size += n;
+        }*/
+            
+            difference_type posx = ft::distance(this->begin(),pos);
+            
+            difference_type l = 0;
+            difference_type n = ft::distance(first,last);
+            
+            pointer tmp;
+            size_type old_cap = _cap;
+    
+            bool inserted = false;
+
+            if(_size + n > _cap)
+            {
+                //allocating until the size is enough for the insertion
+                while(_size+n > _cap)
+                    _cap *=2;
+                tmp = ptr;
+                ptr = alloc.allocate(_cap);
+                //iterating and importing elemanets from the old array until we found the insertion offset
+                for(difference_type i = 0; i < _size + 1 ; i++)
+                {
+                    if(i != posx)
+                    {
+                        //inserting old elements before the insertion point in their old location
+                        if (!inserted)
+                        {
+                            alloc.construct(ptr + i ,tmp[l]);
+                             
+                        }
+                        //if the n elements are inserted we insert the old elements that are after the insertion point in their new position
+                        // new position =  (old position + number of elements inserted);
+                        else{
+                            alloc.construct(ptr + i +  n - 1,tmp[l]);  
+                       
+                        }
+                        l++;
+                            
+                    }
+                    //inserting n values in the new array
+                    else
+                    {
+                        difference_type c = i;
+                        inserted = true;  
+                        while(first != last)
+                        {  
+                             
+                            alloc.construct(ptr + c,*(first));
+                            c++;
+                            first++;
+                        }                    
+                    }
+                }
+                alloc.deallocate(tmp, old_cap);
+                _size += n;
+            
+            }
+            else
+            { 
+                //inserting elements that are after the insertion point in their new location
+                for(difference_type i = _size; i > posx+n; i--)
+                    alloc.construct(ptr + i + n, *(ptr + i - 1));
+                _size += n; 
+                difference_type c = 0;
+                while(first != last)
+                {  
+                    alloc.construct(ptr + c,*first);
+                    first++;
+                    c++;
+                }     
+            }
         }
+
+        
     };
+
     template <typename T>
     std::ostream &operator<<(std::ostream &o,const Vector<T> &p)
     {

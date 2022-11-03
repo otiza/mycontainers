@@ -61,6 +61,11 @@ namespace ft{
             reference operator*() const{return(*(this->ptr));}
             pointer operator->() const{return this->ptr;}
             reference operator[](int i) const{return this->ptr[i];}
+             difference_type operator-(const iterator &obj) const
+        {
+            //number of cases betwen to cases;
+            return (this->ptr - obj.ptr);
+        }
             template <class Iter>
             bool operator< (const iterator<Iter>& X){return (this->ptr < (X.ptr));}
             template <class Iter>
